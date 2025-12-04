@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Waveform from './Waveform';
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
@@ -27,7 +26,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, isProcessing }) =
 
       recognitionRef.current.onerror = (event: any) => {
         console.error("Speech recognition error", event.error);
-        setError("Microphone error. Please type.");
+        setError("Microphone error.");
         setIsListening(false);
       };
 
@@ -35,7 +34,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, isProcessing }) =
         setIsListening(false);
       };
     } else {
-      setError("Browser doesn't support speech recognition.");
+      setError("Not supported");
     }
   }, [onTranscript]);
 
@@ -53,37 +52,32 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, isProcessing }) =
   };
 
   return (
-    <div className="flex flex-col items-center gap-2">
-       {isListening ? (
-         <div className="flex flex-col items-center animate-pulse">
-            <span className="text-cyan-400 text-sm font-semibold mb-2">Listening...</span>
-            <Waveform isActive={true} />
-         </div>
-       ) : (
-         <div className="h-12 flex items-center justify-center">
-            {isProcessing && <Waveform isActive={true} />}
-         </div>
-       )}
-      
+    <div className="flex items-center relative">
       <button
         onClick={toggleListening}
-        disabled={isProcessing || !!error}
+        disabled={isProcessing || (!!error && error !== "Microphone error.")}
+        title={error || "Speak"}
         className={`
-          rounded-full p-6 transition-all duration-300 shadow-lg border-2
+          p-3 rounded-full transition-all duration-200 flex items-center justify-center
           ${isListening 
-            ? 'bg-red-500/20 border-red-500 text-red-500 scale-110 shadow-red-500/50' 
-            : 'bg-cyan-500/20 border-cyan-500 text-cyan-400 hover:bg-cyan-500/30 hover:scale-105 shadow-cyan-500/30'
+            ? 'bg-red-50 text-red-600 ring-2 ring-red-500 animate-pulse' 
+            : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-primary'
           }
-          ${isProcessing ? 'opacity-50 cursor-not-allowed grayscale' : ''}
+          ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
         `}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-          <line x1="12" x2="12" y1="19" y2="22"/>
-        </svg>
+        {isListening ? (
+           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        ) : (
+           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" x2="12" y1="19" y2="22"/>
+          </svg>
+        )}
       </button>
-      {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+      
+      {/* Tooltip/Error popover if needed, for now simple title is enough */}
     </div>
   );
 };
