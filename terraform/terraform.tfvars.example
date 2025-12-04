@@ -1,0 +1,17 @@
+# Copy this file to terraform.tfvars and fill in your values
+# terraform.tfvars is gitignored to protect secrets
+
+aws_region = "ap-southeast-2"
+app_name   = "website-chat"
+
+# GitHub Personal Access Token
+# Create at: https://github.com/settings/tokens
+# Required scope: repo (for private repos) or public_repo (for public repos)
+github_token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Google Gemini API Key
+# Get at: https://aistudio.google.com/app/apikey
+gemini_api_key = "your-gemini-api-key"
+
+# Branch to deploy
+branch_name = "main"
