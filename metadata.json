@@ -1,5 +1,5 @@
 {
-  "name": "WebVoice Chat",
+  "name": "SMEC AI website chat Chat",
   "description": "Voice chat with any website using Gemini Search Grounding and TTS.",
   "requestFramePermissions": [
     "microphone"

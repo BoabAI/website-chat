@@ -33,7 +33,7 @@ const App = () => {
     try {
       const data = await scrapeWebsite(url);
       setScrapedData(data);
-      
+
       let initialMessage: Message;
 
       if (data.success) {
@@ -52,10 +52,10 @@ const App = () => {
           groundingSources: summaryResponse.groundingSources
         };
       }
-      
+
       setMessages([initialMessage]);
       setAppState(AppState.CHATTING);
-      
+
       // Auto-speak welcome message
       handleSpeakResponse(initialMessage.text);
 
@@ -109,9 +109,9 @@ const App = () => {
 
     const response = await generateChatResponse(text, context, history);
 
-    const modelMsg: Message = { 
-      role: 'model', 
-      text: response.text, 
+    const modelMsg: Message = {
+      role: 'model',
+      text: response.text,
       timestamp: Date.now(),
       groundingSources: response.groundingSources
     };
@@ -133,7 +133,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center">
-      
+
       {/* Header */}
       <header className="w-full p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/90 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-2">
@@ -144,11 +144,11 @@ const App = () => {
             </svg>
           </div>
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
-            WebVoice
+            SMEC AI website chat
           </h1>
         </div>
         {appState === AppState.CHATTING && (
-          <button 
+          <button
             onClick={resetApp}
             className="text-sm text-slate-400 hover:text-white transition-colors"
           >
@@ -159,7 +159,7 @@ const App = () => {
 
       {/* Main Content */}
       <main className="flex-1 w-full max-w-2xl p-4 flex flex-col relative">
-        
+
         {appState === AppState.IDLE && (
           <div className="flex-1 flex flex-col justify-center items-center gap-8 animate-in fade-in zoom-in duration-500">
             <div className="text-center space-y-4 max-w-md">
@@ -168,7 +168,7 @@ const App = () => {
                 Enter a URL to start a voice conversation with its content, powered by Gemini Search Grounding.
               </p>
             </div>
-            
+
             <form onSubmit={handleUrlSubmit} className="w-full max-w-md relative group">
               <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
               <div className="relative flex">
@@ -200,7 +200,7 @@ const App = () => {
 
         {appState === AppState.CHATTING && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
-             
+
              {/* Website Info Badge */}
              <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 mb-4 flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2 overflow-hidden">
@@ -219,9 +219,9 @@ const App = () => {
                {messages.map((msg, idx) => (
                  <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     <div className={`
-                      max-w-[85%] rounded-2xl px-5 py-3 
-                      ${msg.role === 'user' 
-                        ? 'bg-blue-600 text-white rounded-tr-none' 
+                      max-w-[85%] rounded-2xl px-5 py-3
+                      ${msg.role === 'user'
+                        ? 'bg-blue-600 text-white rounded-tr-none'
                         : 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700'}
                     `}>
                       <p className="leading-relaxed">{msg.text}</p>
@@ -230,11 +230,11 @@ const App = () => {
                     {msg.role === 'model' && msg.groundingSources && msg.groundingSources.length > 0 && (
                       <div className="mt-2 max-w-[85%] flex flex-wrap gap-2">
                         {msg.groundingSources.map((source, i) => (
-                          <a 
-                            key={i} 
-                            href={source.uri} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
+                          <a
+                            key={i}
+                            href={source.uri}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="text-[10px] bg-slate-800/80 hover:bg-slate-800 text-cyan-400 border border-slate-700 hover:border-cyan-500/50 px-2 py-1 rounded-md flex items-center gap-1.5 transition-all group"
                           >
                             <span className="truncate max-w-[150px] font-medium">{source.title}</span>
@@ -259,7 +259,7 @@ const App = () => {
 
              {/* Controls Overlay */}
              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent pt-12 pb-4 px-4 flex flex-col items-center gap-4">
-                
+
                 {/* Visualizer for TTS Output */}
                 {isPlayingAudio && (
                   <div className="absolute -top-8 flex flex-col items-center gap-1">
@@ -272,7 +272,7 @@ const App = () => {
                 <div className="w-full flex items-end gap-3 max-w-xl">
                   {/* Voice Button */}
                   <VoiceInput onTranscript={handleUserMessage} isProcessing={isProcessing} />
-                  
+
                   {/* Text Fallback */}
                   <div className="flex-1 relative">
                     <input
