@@ -142,7 +142,7 @@ const App = () => {
              <span className="text-primary font-bold text-lg">S</span>
           </div>
           <h1 className="text-xl font-bold text-white tracking-wide">
-            SMEC AI <span className="font-light opacity-80">Chat</span>
+            SMEC AI <span className="font-light opacity-80">Website Chat</span>
           </h1>
         </div>
         {appState === AppState.CHATTING && (
@@ -179,17 +179,12 @@ const App = () => {
                 />
                 <button
                   type="submit"
-                  className="bg-secondary hover:bg-amber-500 text-white font-bold px-8 py-5 rounded-r-lg transition-colors text-lg"
+                  className="bg-secondary hover:bg-violet-700 text-white font-bold px-8 py-5 rounded-r-lg transition-colors text-lg"
                 >
                   Start
                 </button>
               </div>
             </form>
-            
-            {/* Disclaimer / Footer-like text */}
-            <p className="text-xs text-gray-400 mt-8">
-              Powered by Google Gemini • Text-to-Speech & Search Grounding
-            </p>
           </div>
         )}
 
@@ -295,7 +290,7 @@ const App = () => {
                   <button
                     onClick={() => handleUserMessage(inputText)}
                     disabled={!inputText.trim() || isProcessing}
-                    className="p-3 bg-secondary hover:bg-amber-500 rounded-full text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed mr-1"
+                    className="p-3 bg-secondary hover:bg-violet-700 rounded-full text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed mr-1"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="22" y1="2" x2="11" y2="13"></line>
