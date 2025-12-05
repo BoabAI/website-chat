@@ -274,7 +274,7 @@ const App = () => {
                 {isGeneratingAudio && !isPlayingAudio && (
                   <div className="bg-secondary/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg mb-2 animate-in slide-in-from-bottom-4 fade-in">
                     <Waveform isActive={true} barColor="bg-white" />
-                    <span className="text-xs text-white font-bold tracking-wider uppercase">Processing</span>
+                    <span className="text-xs text-white font-bold tracking-wider uppercase">Please wait</span>
                   </div>
                 )}
 
