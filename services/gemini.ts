@@ -26,14 +26,15 @@ export const generateChatResponse = async (
   
   // Prepare chat history for context
   // We include the website context in the system instruction or first user message
-  const systemInstruction = `You are a helpful assistant discussing a website. 
-  
+  const systemInstruction = `You are a helpful assistant discussing a website.
+
   WEBSITE CONTEXT:
   ${context ? context : "The user provided a URL but we couldn't scrape it. Please use your Google Search tool to find information about the URL provided by the user."}
-  
-  If the user asks about the website, use the context provided. 
+
+  If the user asks about the website, use the context provided.
   If the context is missing or insufficient, or if the user asks about current events, YOU MUST USE THE googleSearch TOOL to find the answer.
-  Always answer concisely as your response will be spoken out loud. Avoid long lists or complex formatting.`;
+
+  CRITICAL: Answer in 1-2 short sentences maximum. Be direct and conversational. No lists, bullet points, or long explanations. Your response will be spoken aloud.`;
 
   const contents = [
     ...history.map(msg => ({
@@ -78,9 +79,9 @@ export const generateChatResponse = async (
 export const generateWebsiteSummary = async (url: string): Promise<ChatResponse> => {
   const ai = getAiClient();
   
-  const systemInstruction = `You are a helpful assistant. The user wants to know about a specific website URL. 
-  Use Google Search to find out what the website is about and provide a brief, engaging summary (2-3 sentences).
-  Start by mentioning the name of the website or entity.`;
+  const systemInstruction = `You are a helpful assistant. The user wants to know about a specific website URL.
+  Use Google Search to find out what the website is about and provide a 1-2 sentence summary.
+  Start by mentioning the name of the website. Be brief.`;
 
   try {
     const response = await ai.models.generateContent({
