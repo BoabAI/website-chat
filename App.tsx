@@ -5,6 +5,7 @@ import { playAudioData } from './services/audio';
 import { AppState, Message, ScrapedData } from './types';
 import VoiceInput, { VoiceInputRef } from './components/VoiceInput';
 import Waveform from './components/Waveform';
+import SmecLogo from './components/SmecLogo';
 
 const App = () => {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
@@ -161,20 +162,16 @@ const App = () => {
     <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col items-center font-sans">
 
       {/* Header */}
-      <header className="w-full p-6 shadow-md flex justify-between items-center bg-primary sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
-            {/* Simple logo placeholder matching SMEC AI branding style */}
-             <span className="text-primary font-bold text-lg">S</span>
-          </div>
-          <h1 className="text-xl font-bold text-white tracking-wide">
-            SMEC AI <span className="font-light opacity-80">Website Chat</span>
-          </h1>
+      <header className="w-full px-6 py-4 shadow-sm flex justify-between items-center bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="flex items-center gap-4">
+          <SmecLogo className="h-9" />
+          <div className="h-6 w-px bg-gray-300"></div>
+          <span className="text-gray-500 font-medium text-sm">Website Chat</span>
         </div>
         {appState === AppState.CHATTING && (
           <button
             onClick={resetApp}
-            className="text-sm text-white/80 hover:text-white transition-colors underline decoration-secondary/0 hover:decoration-secondary decoration-2 underline-offset-4"
+            className="text-sm text-gray-500 hover:text-primary transition-colors"
           >
             Change URL
           </button>
