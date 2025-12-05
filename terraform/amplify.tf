@@ -3,7 +3,7 @@ resource "aws_amplify_app" "website_chat" {
   name         = var.app_name
   repository   = "https://github.com/BoabAI/website-chat"
   access_token = var.github_token
-  platform     = "WEB_COMPUTE"
+  platform     = "WEB"
 
   # Build specification for Vite React app
   build_spec = <<-EOT
@@ -12,7 +12,7 @@ resource "aws_amplify_app" "website_chat" {
       phases:
         preBuild:
           commands:
-            - npm ci
+            - npm ci --include=dev
         build:
           commands:
             - npm run build
