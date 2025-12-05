@@ -165,56 +165,190 @@ export const useChat = ({ onMessageAdded, onMessageUpdated, context }: UseChatPr
     );
   }, [context, onMessageAdded, onMessageUpdated, queueSentenceForSpeech]);
 
+  // Track if we're waiting for final result after stop
+  const pendingStopRef = useRef(false);
+  // Track if audio has actually started (mic is capturing)
+  const audioStartedRef = useRef(false);
+  // Keep mic stream alive during recognition
+  const micStreamRef = useRef<MediaStream | null>(null);
+
   // Start listening (push-to-talk start)
-  const startListening = useCallback(() => {
-    console.log('[useChat] startListening');
+  const startListening = useCallback(async () => {
+    console.log('[useChat] ========== START LISTENING ==========');
+    console.log('[useChat] Browser:', navigator.userAgent);
+    console.log('[useChat] webkitSpeechRecognition available:', 'webkitSpeechRecognition' in window);
+    console.log('[useChat] SpeechRecognition available:', 'SpeechRecognition' in window);
+    console.log('[useChat] mediaDevices available:', !!navigator.mediaDevices);
 
     // Stop any playing audio when user wants to speak
+    console.log('[useChat] Stopping any playing audio...');
     abortRef.current = true;
     audioQueueRef.current = [];
     stopAudio();
     setIsSpeaking(false);
     isPlayingQueueRef.current = false;
+    pendingStopRef.current = false;
+    audioStartedRef.current = false;
 
+    // Check mic permission status first
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      console.log('[useChat] 🔐 Mic permission status:', permissionStatus.state);
+    } catch (e) {
+      console.log('[useChat] Could not query permission status:', e);
+    }
+
+    // Get mic stream and KEEP IT ALIVE during recognition
+    try {
+      console.log('[useChat] 🎙️ Requesting mic via getUserMedia...');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const tracks = stream.getAudioTracks();
+      console.log('[useChat] ✅ Mic stream obtained!');
+      console.log('[useChat] Audio tracks:', tracks.length);
+      tracks.forEach((track, i) => {
+        console.log(`[useChat] Track ${i}: label="${track.label}", enabled=${track.enabled}, muted=${track.muted}, readyState=${track.readyState}`);
+      });
+      // KEEP the stream alive - don't stop it!
+      micStreamRef.current = stream;
+      console.log('[useChat] 🔒 Mic stream kept alive for recognition');
+    } catch (err: any) {
+      console.error('[useChat] ❌ Mic permission denied!');
+      console.error('[useChat] Error name:', err.name);
+      console.error('[useChat] Error message:', err.message);
+      console.error('[useChat] Full error:', err);
+      return;
+    }
+
+    console.log('[useChat] Setting up SpeechRecognition...');
     if (!recognitionRef.current) {
+      console.log('[useChat] Creating new recognition instance...');
       recognitionRef.current = initRecognition();
-      if (!recognitionRef.current) return;
+      if (!recognitionRef.current) {
+        console.error('[useChat] ❌ Failed to create recognition instance!');
+        return;
+      }
+      console.log('[useChat] Recognition instance created:', recognitionRef.current);
 
       recognitionRef.current.onresult = (event: any) => {
+        console.log('[useChat] onresult fired, results count:', event.results.length);
+
+        // Log all results for debugging
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          console.log(`[useChat] Result[${i}]: isFinal=${result.isFinal}, transcript="${result[0].transcript}", confidence=${result[0].confidence}`);
+        }
+
         const lastResult = event.results[event.results.length - 1];
         if (lastResult.isFinal) {
           const transcript = lastResult[0].transcript;
-          console.log('[useChat] Transcript:', transcript);
+          console.log('[useChat] ✅ Final transcript:', transcript);
+
+          // If we were waiting for final result after stop, now we can process
+          if (pendingStopRef.current) {
+            pendingStopRef.current = false;
+            setIsListening(false);
+          }
+
           processUserInput(transcript);
+        } else {
+          console.log('[useChat] ⏳ Interim result (not final yet)');
         }
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        console.error('[useChat] Recognition error:', event.error);
+        console.error('[useChat] ❌ Recognition error:', event.error, event);
+        pendingStopRef.current = false;
         setIsListening(false);
       };
 
       recognitionRef.current.onend = () => {
-        console.log('[useChat] Recognition ended');
+        console.log('[useChat] 🔚 Recognition ended, pendingStop:', pendingStopRef.current);
+        // If we never got a final result, clear listening state
+        if (pendingStopRef.current) {
+          console.log('[useChat] ⚠️ No final result received before end');
+          pendingStopRef.current = false;
+          setIsListening(false);
+        }
+      };
+
+      recognitionRef.current.onstart = () => {
+        console.log('[useChat] 🎤 Recognition started');
+      };
+
+      recognitionRef.current.onspeechstart = () => {
+        console.log('[useChat] 🗣️ Speech detected');
+      };
+
+      recognitionRef.current.onspeechend = () => {
+        console.log('[useChat] 🤫 Speech ended');
+      };
+
+      recognitionRef.current.onaudiostart = () => {
+        console.log('[useChat] 🔊 Audio capture started');
+        audioStartedRef.current = true;
+      };
+
+      recognitionRef.current.onaudioend = () => {
+        console.log('[useChat] 🔇 Audio capture ended');
+      };
+
+      recognitionRef.current.onnomatch = () => {
+        console.log('[useChat] ❓ No speech match');
       };
     }
 
     try {
+      console.log('[useChat] 🚀 Calling recognition.start()...');
+      console.log('[useChat] Recognition state before start:', {
+        continuous: recognitionRef.current.continuous,
+        interimResults: recognitionRef.current.interimResults,
+        lang: recognitionRef.current.lang,
+      });
       recognitionRef.current.start();
+      console.log('[useChat] ✅ recognition.start() called successfully');
       setIsListening(true);
-    } catch (e) {
-      console.error('[useChat] Failed to start recognition:', e);
+    } catch (e: any) {
+      console.error('[useChat] ❌ Failed to start recognition!');
+      console.error('[useChat] Error name:', e.name);
+      console.error('[useChat] Error message:', e.message);
+      console.error('[useChat] Full error:', e);
     }
   }, [initRecognition, processUserInput]);
 
+  // Helper to release mic stream
+  const releaseMicStream = useCallback(() => {
+    if (micStreamRef.current) {
+      console.log('[useChat] 🔓 Releasing mic stream...');
+      micStreamRef.current.getTracks().forEach(track => track.stop());
+      micStreamRef.current = null;
+    }
+  }, []);
+
   // Stop listening (push-to-talk end)
   const stopListening = useCallback(() => {
-    console.log('[useChat] stopListening');
+    console.log('[useChat] stopListening, audioStarted:', audioStartedRef.current);
+
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      // If audio never started, we need to wait a bit for the mic to initialize
+      if (!audioStartedRef.current) {
+        console.log('[useChat] ⏳ Audio not started yet, waiting 500ms before stop...');
+        setTimeout(() => {
+          console.log('[useChat] ⏳ Delayed stop, audioStarted now:', audioStartedRef.current);
+          if (recognitionRef.current) {
+            pendingStopRef.current = true;
+            recognitionRef.current.stop();
+          }
+          releaseMicStream();
+        }, 500);
+      } else {
+        // Audio was capturing, safe to stop
+        pendingStopRef.current = true;
+        recognitionRef.current.stop();
+        releaseMicStream();
+      }
     }
-    setIsListening(false);
-  }, []);
+    // Don't set isListening false yet - wait for final result or onend
+  }, [releaseMicStream]);
 
   // Send text message (from input field)
   const sendTextMessage = useCallback((text: string) => {
@@ -230,6 +364,7 @@ export const useChat = ({ onMessageAdded, onMessageUpdated, context }: UseChatPr
   // Reset chat
   const resetChat = useCallback(() => {
     stopListening();
+    releaseMicStream();
     abortRef.current = true;
     audioQueueRef.current = [];
     stopAudio();
@@ -238,7 +373,7 @@ export const useChat = ({ onMessageAdded, onMessageUpdated, context }: UseChatPr
     setIsSpeaking(false);
     setIsProcessing(false);
     isPlayingQueueRef.current = false;
-  }, [stopListening]);
+  }, [stopListening, releaseMicStream]);
 
   // Send initial greeting (non-streaming, simple)
   const sendGreeting = useCallback(async (greeting: string) => {

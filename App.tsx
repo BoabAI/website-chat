@@ -233,12 +233,12 @@ const App = () => {
                   onTouchEnd={handlePushToTalkEnd}
                   onContextMenu={(e) => e.preventDefault()}
                   disabled={isProcessing}
-                  className={`flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl font-medium transition-all shrink-0 select-none touch-none ${
+                  className={`flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl font-medium transition-all shrink-0 select-none touch-none min-w-[140px] ${
                     isListening
                       ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white ring-4 ring-green-200 scale-[1.02] shadow-lg shadow-green-200'
                       : isProcessing
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-primary to-indigo-700 text-white hover:shadow-lg hover:shadow-indigo-200 hover:scale-[1.02] active:scale-[0.98]'
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-indigo-900 to-indigo-700 text-white hover:shadow-lg hover:shadow-indigo-200 hover:scale-[1.02] active:scale-[0.98]'
                   }`}
                   aria-label="Hold to talk"
                   title="Hold to talk"
