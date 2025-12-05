@@ -273,11 +273,7 @@ const App = () => {
                 {/* Processing indicator - shown while generating TTS */}
                 {isGeneratingAudio && !isPlayingAudio && (
                   <div className="bg-secondary/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg mb-2 animate-in slide-in-from-bottom-4 fade-in">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                    </div>
+                    <Waveform isActive={true} barColor="bg-white" />
                     <span className="text-xs text-white font-bold tracking-wider uppercase">Processing</span>
                   </div>
                 )}
@@ -285,7 +281,7 @@ const App = () => {
                 {/* Visualizer for TTS Output */}
                 {isPlayingAudio && (
                   <div className="bg-primary/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg mb-2 animate-in slide-in-from-bottom-4 fade-in">
-                    <Waveform isActive={true} />
+                    <Waveform isActive={true} barColor="bg-white" />
                     <span className="text-xs text-white font-bold tracking-wider uppercase">Speaking</span>
                   </div>
                 )}
