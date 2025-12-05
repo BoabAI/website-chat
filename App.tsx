@@ -282,7 +282,7 @@ const App = () => {
 
                 {/* Processing indicator - shown while generating TTS */}
                 {isGeneratingAudio && !isPlayingAudio && (
-                  <div className="bg-secondary/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg mb-2 animate-in slide-in-from-bottom-4 fade-in">
+                  <div className="bg-orange-500/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg mb-2 animate-in slide-in-from-bottom-4 fade-in">
                     <Waveform isActive={true} barColor="bg-white" />
                     <span className="text-xs text-white font-bold tracking-wider uppercase">Please wait</span>
                   </div>
@@ -298,7 +298,7 @@ const App = () => {
 
                 {/* Listening indicator - shown when waiting for user speech */}
                 {isListening && !isProcessing && !isPlayingAudio && !isGeneratingAudio && (
-                  <div className="bg-red-500/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg mb-2 animate-in slide-in-from-bottom-4 fade-in">
+                  <div className="bg-green-500/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg mb-2 animate-in slide-in-from-bottom-4 fade-in">
                     <Waveform isActive={true} barColor="bg-white" />
                     <span className="text-xs text-white font-bold tracking-wider uppercase">Listening</span>
                   </div>
