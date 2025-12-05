@@ -1,14 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
   isProcessing: boolean;
+  onListeningChange?: (isListening: boolean) => void;
 }
 
-const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, isProcessing }) => {
+export interface VoiceInputRef {
+  startListening: () => void;
+  stopListening: () => void;
+}
+
+const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(({ onTranscript, isProcessing, onListeningChange }, ref) => {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    startListening: () => {
+      if (!isProcessing && recognitionRef.current && !isListening) {
+        setError(null);
+        recognitionRef.current.start();
+        setIsListening(true);
+      }
+    },
+    stopListening: () => {
+      if (recognitionRef.current && isListening) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+      }
+    }
+  }));
+
+  // Notify parent of listening state changes
+  useEffect(() => {
+    onListeningChange?.(isListening);
+  }, [isListening, onListeningChange]);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
@@ -80,6 +108,8 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, isProcessing }) =
       {/* Tooltip/Error popover if needed, for now simple title is enough */}
     </div>
   );
-};
+});
+
+VoiceInput.displayName = 'VoiceInput';
 
 export default VoiceInput;

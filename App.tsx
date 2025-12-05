@@ -3,7 +3,7 @@ import { scrapeWebsite } from './services/scraper';
 import { generateChatResponse, generateSpeech, generateWebsiteSummary } from './services/gemini';
 import { playAudioData } from './services/audio';
 import { AppState, Message, ScrapedData } from './types';
-import VoiceInput from './components/VoiceInput';
+import VoiceInput, { VoiceInputRef } from './components/VoiceInput';
 import Waveform from './components/Waveform';
 
 const App = () => {
@@ -15,7 +15,10 @@ const App = () => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [inputText, setInputText] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [continuousMode, setContinuousMode] = useState(true); // Auto-listen after AI speaks
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const voiceInputRef = useRef<VoiceInputRef>(null);
   const [currentAudioSource, setCurrentAudioSource] = useState<AudioBufferSourceNode | null>(null);
 
   const scrollToBottom = () => {
@@ -93,6 +96,13 @@ const App = () => {
           // onEnded: Audio finished playing
           setIsPlayingAudio(false);
           setCurrentAudioSource(null);
+
+          // Auto-start listening for next user input if continuous mode is on
+          if (continuousMode) {
+            setTimeout(() => {
+              voiceInputRef.current?.startListening();
+            }, 300); // Small delay for better UX
+          }
         },
         () => {
           // onStarted: Audio actually started playing - NOW show the indicator
@@ -286,11 +296,24 @@ const App = () => {
                   </div>
                 )}
 
+                {/* Listening indicator - shown when waiting for user speech */}
+                {isListening && !isProcessing && !isPlayingAudio && !isGeneratingAudio && (
+                  <div className="bg-red-500/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg mb-2 animate-in slide-in-from-bottom-4 fade-in">
+                    <Waveform isActive={true} barColor="bg-white" />
+                    <span className="text-xs text-white font-bold tracking-wider uppercase">Listening</span>
+                  </div>
+                )}
+
                 {/* Input Area */}
                 <div className="w-full flex items-end gap-3 max-w-2xl bg-white p-2 rounded-full shadow-xl border border-gray-200">
                   {/* Voice Button */}
                   <div className="pl-1">
-                    <VoiceInput onTranscript={handleUserMessage} isProcessing={isProcessing} />
+                    <VoiceInput
+                      ref={voiceInputRef}
+                      onTranscript={handleUserMessage}
+                      isProcessing={isProcessing}
+                      onListeningChange={setIsListening}
+                    />
                   </div>
 
                   {/* Text Fallback */}
