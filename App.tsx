@@ -20,6 +20,12 @@ const App = () => {
     setMessages(prev => [...prev, message]);
   }, []);
 
+  const handleMessageUpdated = useCallback((timestamp: number, text: string) => {
+    setMessages(prev => prev.map(msg =>
+      msg.timestamp === timestamp ? { ...msg, text } : msg
+    ));
+  }, []);
+
   const {
     isListening,
     isSpeaking,
@@ -29,7 +35,11 @@ const App = () => {
     sendTextMessage,
     sendGreeting,
     resetChat
-  } = useChat({ onMessageAdded: handleMessageAdded, context: siteContext });
+  } = useChat({
+    onMessageAdded: handleMessageAdded,
+    onMessageUpdated: handleMessageUpdated,
+    context: siteContext
+  });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -214,7 +224,7 @@ const App = () => {
                 </div>
               )}
 
-              <div className="w-full flex items-end gap-3 max-w-2xl bg-white p-2 rounded-full shadow-xl border pointer-events-auto">
+              <div className="w-full flex items-center gap-2 max-w-2xl bg-white p-2 rounded-2xl shadow-xl border border-gray-200 pointer-events-auto">
                 <button
                   onMouseDown={handlePushToTalkStart}
                   onMouseUp={handlePushToTalkEnd}
@@ -223,17 +233,18 @@ const App = () => {
                   onTouchEnd={handlePushToTalkEnd}
                   onContextMenu={(e) => e.preventDefault()}
                   disabled={isProcessing}
-                  className={`p-4 rounded-full transition-all shadow-lg ml-1 shrink-0 select-none touch-none ${
+                  className={`flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl font-medium transition-all shrink-0 select-none touch-none ${
                     isListening
-                      ? 'bg-green-500 text-white ring-4 ring-green-300 scale-110'
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white ring-4 ring-green-200 scale-[1.02] shadow-lg shadow-green-200'
                       : isProcessing
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-primary text-white hover:bg-primary/90 active:scale-95'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-primary to-indigo-700 text-white hover:shadow-lg hover:shadow-indigo-200 hover:scale-[1.02] active:scale-[0.98]'
                   }`}
                   aria-label="Hold to talk"
                   title="Hold to talk"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                  <span className="text-sm font-semibold whitespace-nowrap">Hold to talk</span>
                 </button>
 
                 <input
@@ -243,16 +254,20 @@ const App = () => {
                   onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
                   placeholder="Type your message..."
                   disabled={isProcessing}
-                  className="flex-1 bg-transparent px-4 py-4 focus:outline-none text-lg min-w-0 disabled:opacity-50"
+                  className="flex-1 bg-transparent px-3 py-3 focus:outline-none text-base min-w-0 disabled:opacity-50 placeholder:text-gray-400"
                 />
 
                 <button
                   onClick={handleTextSubmit}
                   disabled={!inputText.trim() || isProcessing}
-                  className="p-3 bg-secondary hover:bg-violet-700 rounded-full text-white disabled:opacity-50 mr-1 shrink-0 transition-colors"
+                  className={`p-3 rounded-xl shrink-0 transition-all ${
+                    !inputText.trim() || isProcessing
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-secondary to-violet-600 text-white hover:shadow-lg hover:shadow-violet-200 hover:scale-[1.02] active:scale-[0.98]'
+                  }`}
                   aria-label="Send Message"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                 </button>
               </div>
             </div>

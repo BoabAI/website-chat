@@ -6,35 +6,38 @@ import { GroundingSource } from "../types";
 const getAiClient = () => {
   if (!process.env.API_KEY) {
     console.error("API_KEY is missing from environment variables");
-    // We handle the UI error in the components, but this prevents crashing if called
     throw new Error("API Key missing");
   }
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
+
+const SYSTEM_INSTRUCTION_BASE = `You are a helpful assistant discussing a website.
+
+WEBSITE CONTEXT:
+{{context}}
+
+If the user asks about the website, use the context provided.
+If the context is missing or insufficient, or if the user asks about current events, YOU MUST USE THE googleSearch TOOL to find the answer.
+
+CRITICAL: Answer in 1-2 short sentences maximum. Be direct and conversational. No lists, bullet points, or long explanations. Your response will be spoken aloud.`;
 
 interface ChatResponse {
   text: string;
   groundingSources: GroundingSource[];
 }
 
+// Non-streaming version (kept for compatibility)
 export const generateChatResponse = async (
   prompt: string,
   context: string,
   history: { role: string; text: string }[]
 ): Promise<ChatResponse> => {
   const ai = getAiClient();
-  
-  // Prepare chat history for context
-  // We include the website context in the system instruction or first user message
-  const systemInstruction = `You are a helpful assistant discussing a website.
 
-  WEBSITE CONTEXT:
-  ${context ? context : "The user provided a URL but we couldn't scrape it. Please use your Google Search tool to find information about the URL provided by the user."}
-
-  If the user asks about the website, use the context provided.
-  If the context is missing or insufficient, or if the user asks about current events, YOU MUST USE THE googleSearch TOOL to find the answer.
-
-  CRITICAL: Answer in 1-2 short sentences maximum. Be direct and conversational. No lists, bullet points, or long explanations. Your response will be spoken aloud.`;
+  const systemInstruction = SYSTEM_INSTRUCTION_BASE.replace(
+    '{{context}}',
+    context || "The user provided a URL but we couldn't scrape it. Please use your Google Search tool to find information about the URL provided by the user."
+  );
 
   const contents = [
     ...history.map(msg => ({
@@ -53,13 +56,12 @@ export const generateChatResponse = async (
       contents: contents,
       config: {
         systemInstruction,
-        tools: [{ googleSearch: {} }], 
+        tools: [{ googleSearch: {} }],
       }
     });
 
     const text = response.text || "I couldn't generate a response.";
-    
-    // Extract grounding chunks if available
+
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const groundingSources: GroundingSource[] = groundingChunks
       .filter((chunk: any) => chunk.web?.uri && chunk.web?.title)
@@ -76,9 +78,88 @@ export const generateChatResponse = async (
   }
 };
 
+// Streaming version - yields sentences as they complete
+export interface StreamCallbacks {
+  onSentence: (sentence: string) => void;
+  onFullText: (text: string, groundingSources: GroundingSource[]) => void;
+  onError: (error: Error) => void;
+}
+
+export const streamChatResponse = async (
+  prompt: string,
+  context: string,
+  history: { role: string; text: string }[],
+  callbacks: StreamCallbacks
+): Promise<void> => {
+  const ai = getAiClient();
+
+  const systemInstruction = SYSTEM_INSTRUCTION_BASE.replace(
+    '{{context}}',
+    context || "The user provided a URL but we couldn't scrape it. Please use your Google Search tool to find information about the URL provided by the user."
+  );
+
+  const contents = [
+    ...history.map(msg => ({
+      role: msg.role,
+      parts: [{ text: msg.text }]
+    })),
+    {
+      role: 'user',
+      parts: [{ text: prompt }]
+    }
+  ];
+
+  let buffer = '';
+  let fullText = '';
+
+  // Regex to find complete sentences (ending with . ! ?)
+  const sentenceEndRegex = /^(.*?[.!?])(\s*)(.*)$/s;
+
+  try {
+    const response = await ai.models.generateContentStream({
+      model: 'gemini-2.5-flash',
+      contents: contents,
+      config: {
+        systemInstruction,
+        // Note: tools not supported in streaming mode, so no googleSearch here
+      }
+    });
+
+    for await (const chunk of response) {
+      const text = chunk.text || '';
+      buffer += text;
+      fullText += text;
+
+      // Extract complete sentences from buffer
+      let match;
+      while ((match = sentenceEndRegex.exec(buffer)) !== null) {
+        const sentence = match[1].trim();
+        if (sentence) {
+          console.log('[streamChatResponse] Sentence ready:', sentence);
+          callbacks.onSentence(sentence);
+        }
+        buffer = match[3]; // Remaining text after the sentence
+      }
+    }
+
+    // Handle any remaining text in buffer (incomplete sentence at end)
+    if (buffer.trim()) {
+      console.log('[streamChatResponse] Final fragment:', buffer.trim());
+      callbacks.onSentence(buffer.trim());
+    }
+
+    // Streaming doesn't provide grounding metadata, so empty array
+    callbacks.onFullText(fullText, []);
+
+  } catch (error) {
+    console.error("Streaming Chat Error:", error);
+    callbacks.onError(error as Error);
+  }
+};
+
 export const generateWebsiteSummary = async (url: string): Promise<ChatResponse> => {
   const ai = getAiClient();
-  
+
   const systemInstruction = `You are a helpful assistant. The user wants to know about a specific website URL.
   Use Google Search to find out what the website is about and provide a 1-2 sentence summary.
   Start by mentioning the name of the website. Be brief.`;
@@ -89,13 +170,12 @@ export const generateWebsiteSummary = async (url: string): Promise<ChatResponse>
       contents: [{ role: 'user', parts: [{ text: `Summarize this website: ${url}` }] }],
       config: {
         systemInstruction,
-        tools: [{ googleSearch: {} }], 
+        tools: [{ googleSearch: {} }],
       }
     });
 
     const text = response.text || "I found the website but couldn't generate a summary.";
-    
-    // Extract grounding chunks
+
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const groundingSources: GroundingSource[] = groundingChunks
       .filter((chunk: any) => chunk.web?.uri && chunk.web?.title)
@@ -116,8 +196,8 @@ export const generateSpeech = async (text: string): Promise<string | null> => {
   const ai = getAiClient();
 
   try {
-    // Wrap text with Australian English accent instruction
-    const promptText = `Speak with an Australian English accent, using natural Australian pronunciation and intonation: ${text}`;
+    // Wrap text with Australian English accent and faster pace instruction
+    const promptText = `Speak with an Australian English accent at a slightly faster, energetic pace: ${text}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
