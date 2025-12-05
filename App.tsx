@@ -152,9 +152,9 @@ const App = () => {
         )}
 
         {appState === AppState.CHATTING && (
-          <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-xl shadow-sm border my-4">
+          <div className="relative flex-1 flex flex-col overflow-hidden bg-white rounded-xl shadow-sm border my-4">
             {/* Site Info */}
-            <div className="bg-gray-50 border-b p-4 flex items-center gap-2 text-sm">
+            <div className="bg-gray-50 border-b p-4 flex items-center gap-2 text-sm shrink-0">
               <span className="text-lg">🌐</span>
               <a href={url} target="_blank" rel="noreferrer" className="truncate font-semibold text-primary hover:underline">
                 {siteTitle || url}
@@ -162,7 +162,7 @@ const App = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-6 p-6 pb-32 bg-gray-50/50">
+            <div className="flex-1 overflow-y-auto space-y-6 p-6 pb-32 bg-gray-50/50 scroll-smooth z-0">
               {messages.map((msg, i) => (
                 <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                   <div className={`max-w-[85%] rounded-2xl px-6 py-4 shadow-sm ${
@@ -176,7 +176,7 @@ const App = () => {
                     <div className="mt-3 max-w-[85%] flex flex-wrap gap-2">
                       {msg.groundingSources.map((src, j) => (
                         <a key={j} href={src.uri} target="_blank" rel="noopener noreferrer"
-                          className="text-xs bg-white hover:bg-gray-50 text-primary border px-3 py-1.5 rounded-full">
+                          className="text-xs bg-white hover:bg-gray-50 text-primary border px-3 py-1.5 rounded-full transition-colors">
                           {src.title}
                         </a>
                       ))}
@@ -188,9 +188,9 @@ const App = () => {
             </div>
 
             {/* Controls */}
-            <div className="absolute bottom-4 left-4 right-4 flex flex-col items-center gap-4">
+            <div className="absolute bottom-4 left-4 right-4 flex flex-col items-center gap-4 z-20 pointer-events-none">
               {(isListening || isSpeaking) && (
-                <div className={`${isSpeaking ? 'bg-primary/90' : 'bg-green-500/90'} backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg`}>
+                <div className={`${isSpeaking ? 'bg-primary/90' : 'bg-green-500/90'} backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg pointer-events-auto animate-in fade-in slide-in-from-bottom-4`}>
                   <Waveform isActive={true} barColor="bg-white" />
                   <span className="text-xs text-white font-bold uppercase">
                     {isSpeaking ? 'Speaking' : 'Listening'}
@@ -198,10 +198,10 @@ const App = () => {
                 </div>
               )}
 
-              <div className="w-full flex items-end gap-3 max-w-2xl bg-white p-2 rounded-full shadow-xl border">
+              <div className="w-full flex items-end gap-3 max-w-2xl bg-white p-2 rounded-full shadow-xl border pointer-events-auto">
                 <button
                   onClick={toggleListening}
-                  className={`p-4 rounded-full transition-all shadow-lg ml-1 ${
+                  className={`p-4 rounded-full transition-all shadow-lg ml-1 shrink-0 ${
                     isListening
                       ? 'bg-green-500 text-white ring-4 ring-green-300 animate-pulse'
                       : 'bg-primary text-white hover:bg-primary/90'
@@ -221,16 +221,16 @@ const App = () => {
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
                   placeholder="Type your message..."
-                  className="flex-1 bg-transparent px-4 py-3 focus:outline-none text-lg"
+                  className="flex-1 bg-transparent px-4 py-4 focus:outline-none text-lg min-w-0"
                 />
 
                 <button
                   onClick={handleTextSubmit}
                   disabled={!inputText.trim()}
-                  className="p-3 bg-secondary hover:bg-violet-700 rounded-full text-white disabled:opacity-50 mr-1"
+                  className="p-3 bg-secondary hover:bg-violet-700 rounded-full text-white disabled:opacity-50 mr-1 shrink-0 transition-colors"
                   aria-label="Send Message"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                 </button>
               </div>
             </div>
