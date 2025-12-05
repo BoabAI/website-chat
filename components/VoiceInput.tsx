@@ -19,10 +19,16 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(({ onTranscript, i
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     startListening: () => {
-      if (!isProcessing && recognitionRef.current && !isListening) {
+      // Allow starting even during processing (for interrupt capability)
+      if (recognitionRef.current && !isListening) {
         setError(null);
-        recognitionRef.current.start();
-        setIsListening(true);
+        try {
+          recognitionRef.current.start();
+          setIsListening(true);
+        } catch (e) {
+          // May fail if already started
+          console.error("Failed to start recognition:", e);
+        }
       }
     },
     stopListening: () => {
@@ -67,15 +73,18 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(({ onTranscript, i
   }, [onTranscript]);
 
   const toggleListening = () => {
-    if (isProcessing) return;
-    
+    // Allow toggling even during processing (for interrupt capability)
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
     } else {
       setError(null);
-      recognitionRef.current?.start();
-      setIsListening(true);
+      try {
+        recognitionRef.current?.start();
+        setIsListening(true);
+      } catch (e) {
+        console.error("Failed to start recognition:", e);
+      }
     }
   };
 
@@ -83,15 +92,14 @@ const VoiceInput = forwardRef<VoiceInputRef, VoiceInputProps>(({ onTranscript, i
     <div className="flex items-center relative">
       <button
         onClick={toggleListening}
-        disabled={isProcessing || (!!error && error !== "Microphone error.")}
-        title={error || "Speak"}
+        disabled={!!error && error !== "Microphone error."}
+        title={error || (isListening ? "Stop listening" : "Speak (tap to interrupt)")}
         className={`
           p-3 rounded-full transition-all duration-200 flex items-center justify-center
-          ${isListening 
-            ? 'bg-red-50 text-red-600 ring-2 ring-red-500 animate-pulse' 
+          ${isListening
+            ? 'bg-green-50 text-green-600 ring-2 ring-green-500 animate-pulse'
             : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-primary'
           }
-          ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
         `}
       >
         {isListening ? (

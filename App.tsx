@@ -114,9 +114,14 @@ const App = () => {
   };
 
   const handleUserMessage = async (text: string) => {
-    if (!text.trim() || isProcessing) return;
+    if (!text.trim()) return;
 
-    stopCurrentAudio(); // Interrupt model if user speaks
+    // Stop any ongoing audio immediately (interrupt)
+    stopCurrentAudio();
+    setIsGeneratingAudio(false);
+
+    // If already processing, we still allow the new message (interrupt behavior)
+    // The previous response will complete but we'll start a new one
 
     const userMsg: Message = { role: 'user', text, timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
