@@ -37,3 +37,4 @@ terraform/*_override.tf.json
 
 # Playwright MCP
 .playwright-mcp/
+coverage
