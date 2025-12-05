@@ -72,6 +72,16 @@ export const useGeminiSession = ({ onMessageAdded }: UseGeminiSessionProps) => {
         modelTextRef.current += text;
       },
       onTurnComplete: async () => {
+        // If there's pending user text, add it to messages before model's response
+        if (userTextRef.current.trim()) {
+          onMessageAdded({
+            role: 'user',
+            text: userTextRef.current.trim(),
+            timestamp: Date.now()
+          });
+          userTextRef.current = ''; // Clear after adding
+        }
+
         // Add model message
         if (modelTextRef.current.trim()) {
           onMessageAdded({
