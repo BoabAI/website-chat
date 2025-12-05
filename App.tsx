@@ -13,6 +13,7 @@ const App = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [currentAudioSource, setCurrentAudioSource] = useState<AudioBufferSourceNode | null>(null);
@@ -81,7 +82,10 @@ const App = () => {
   const handleSpeakResponse = async (text: string) => {
     stopCurrentAudio(); // Stop any previous speech
 
+    setIsGeneratingAudio(true); // Show "Processing" indicator
     const audioBase64 = await generateSpeech(text);
+    setIsGeneratingAudio(false); // Hide "Processing" indicator
+
     if (audioBase64) {
       const source = await playAudioData(
         audioBase64,
@@ -135,6 +139,7 @@ const App = () => {
     setMessages([]);
     setScrapedData(null);
     setUrl('');
+    setIsGeneratingAudio(false);
   };
 
   return (
@@ -264,6 +269,18 @@ const App = () => {
 
              {/* Controls Overlay */}
              <div className="absolute bottom-4 left-4 right-4 flex flex-col items-center gap-4">
+
+                {/* Processing indicator - shown while generating TTS */}
+                {isGeneratingAudio && !isPlayingAudio && (
+                  <div className="bg-secondary/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg mb-2 animate-in slide-in-from-bottom-4 fade-in">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    </div>
+                    <span className="text-xs text-white font-bold tracking-wider uppercase">Processing</span>
+                  </div>
+                )}
 
                 {/* Visualizer for TTS Output */}
                 {isPlayingAudio && (
