@@ -6,6 +6,12 @@ class AudioRecorderWorklet extends AudioWorkletProcessor {
     super();
     this.buffer = new Int16Array(2048); // ~128ms at 16kHz
     this.bufferWriteIndex = 0;
+    
+    this.port.onmessage = (event) => {
+      if (event.data.type === 'flush') {
+        this.sendBuffer();
+      }
+    };
   }
 
   process(inputs) {

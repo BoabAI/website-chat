@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { scrapeWebsite } from './services/scraper';
 import { generateWebsiteSummary } from './services/gemini';
 import { AppState, Message } from './types';
-import { useGeminiSession } from './hooks/useGeminiSession';
-import { SYSTEM_PROMPTS } from './config/constants';
+import { useChat } from './hooks/useChat';
 import Waveform from './components/Waveform';
 import SmecLogo from './components/SmecLogo';
 
@@ -11,6 +10,7 @@ const App = () => {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
   const [url, setUrl] = useState('');
   const [siteTitle, setSiteTitle] = useState('');
+  const [siteContext, setSiteContext] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
 
@@ -23,12 +23,13 @@ const App = () => {
   const {
     isListening,
     isSpeaking,
-    initSession,
-    toggleListening,
+    isProcessing,
+    startListening,
+    stopListening,
     sendTextMessage,
-    resetSession,
-    sessionRef
-  } = useGeminiSession({ onMessageAdded: handleMessageAdded });
+    sendGreeting,
+    resetChat
+  } = useChat({ onMessageAdded: handleMessageAdded, context: siteContext });
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -49,10 +50,12 @@ const App = () => {
         context = data.content;
         title = data.title;
         setSiteTitle(data.title);
+        setSiteContext(data.content);
       } else {
         const summary = await generateWebsiteSummary(url);
         title = url;
         setSiteTitle(url);
+        setSiteContext(''); // Will use search grounding
         // Add summary as first message
         setMessages([{
           role: 'model',
@@ -64,40 +67,53 @@ const App = () => {
 
       setAppState(AppState.CHATTING);
 
-      const systemPrompt = SYSTEM_PROMPTS.CHAT_BASE.replace('{{context}}', context || "Answer based on your knowledge.");
-      await initSession(systemPrompt);
-      
-      // We don't strictly need to initMic here as it lazy loads on startListening
+      // Generate greeting
+      const greeting = data.success
+        ? `G'day! I've had a look at ${title}. How can I help you with it today?`
+        : `G'day! I've researched ${url}. How can I help you today?`;
 
-      // Make AI greet user
+      // Small delay to let UI settle, then greet
       setTimeout(() => {
-        const greetingPrompt = data.success
-          ? SYSTEM_PROMPTS.GREETING_SUCCESS(title)
-          : SYSTEM_PROMPTS.GREETING_FALLBACK(url);
-        
-        sessionRef.current?.sendText(greetingPrompt);
-      }, 500);
+        sendGreeting(greeting);
+      }, 300);
 
     } catch (error) {
       console.error(error);
       setAppState(AppState.IDLE);
-      // Consider a toast here instead of alert in future
       alert("Failed to process URL");
     }
   };
 
   const handleTextSubmit = () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isProcessing) return;
     sendTextMessage(inputText);
     setInputText('');
   };
 
+  // Track if we're currently in a push-to-talk gesture
+  const isPushingRef = useRef(false);
+
+  const handlePushToTalkStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    if (isPushingRef.current || isProcessing) return;
+    isPushingRef.current = true;
+    startListening();
+  }, [startListening, isProcessing]);
+
+  const handlePushToTalkEnd = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    if (!isPushingRef.current) return;
+    isPushingRef.current = false;
+    stopListening();
+  }, [stopListening]);
+
   const reset = () => {
-    resetSession();
+    resetChat();
     setAppState(AppState.IDLE);
     setMessages([]);
     setUrl('');
     setSiteTitle('');
+    setSiteContext('');
   };
 
   return (
@@ -123,7 +139,7 @@ const App = () => {
             <div className="text-center space-y-6 max-w-xl">
               <h2 className="text-5xl font-bold text-primary">Chat with the Web</h2>
               <p className="text-gray-600 text-xl">
-                Enter a URL to start a real-time voice conversation.
+                Enter a URL to start a voice conversation.
               </p>
             </div>
             <form onSubmit={handleSubmit} className="w-full max-w-lg shadow-xl rounded-lg">
@@ -189,30 +205,35 @@ const App = () => {
 
             {/* Controls */}
             <div className="absolute bottom-4 left-4 right-4 flex flex-col items-center gap-4 z-20 pointer-events-none">
-              {(isListening || isSpeaking) && (
-                <div className={`${isSpeaking ? 'bg-primary/90' : 'bg-green-500/90'} backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg pointer-events-auto animate-in fade-in slide-in-from-bottom-4`}>
+              {(isListening || isSpeaking || isProcessing) && (
+                <div className={`${isSpeaking ? 'bg-primary/90' : isProcessing ? 'bg-secondary/90' : 'bg-green-500/90'} backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-3 shadow-lg pointer-events-auto animate-in fade-in slide-in-from-bottom-4`}>
                   <Waveform isActive={true} barColor="bg-white" />
                   <span className="text-xs text-white font-bold uppercase">
-                    {isSpeaking ? 'Speaking' : 'Listening'}
+                    {isSpeaking ? 'Speaking' : isProcessing ? 'Thinking' : 'Listening'}
                   </span>
                 </div>
               )}
 
               <div className="w-full flex items-end gap-3 max-w-2xl bg-white p-2 rounded-full shadow-xl border pointer-events-auto">
                 <button
-                  onClick={toggleListening}
-                  className={`p-4 rounded-full transition-all shadow-lg ml-1 shrink-0 ${
+                  onMouseDown={handlePushToTalkStart}
+                  onMouseUp={handlePushToTalkEnd}
+                  onMouseLeave={handlePushToTalkEnd}
+                  onTouchStart={handlePushToTalkStart}
+                  onTouchEnd={handlePushToTalkEnd}
+                  onContextMenu={(e) => e.preventDefault()}
+                  disabled={isProcessing}
+                  className={`p-4 rounded-full transition-all shadow-lg ml-1 shrink-0 select-none touch-none ${
                     isListening
-                      ? 'bg-green-500 text-white ring-4 ring-green-300 animate-pulse'
-                      : 'bg-primary text-white hover:bg-primary/90'
+                      ? 'bg-green-500 text-white ring-4 ring-green-300 scale-110'
+                      : isProcessing
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-primary text-white hover:bg-primary/90 active:scale-95'
                   }`}
-                  aria-label={isListening ? "Stop Listening" : "Start Listening"}
+                  aria-label="Hold to talk"
+                  title="Hold to talk"
                 >
-                  {isListening ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
-                  )}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
                 </button>
 
                 <input
@@ -221,12 +242,13 @@ const App = () => {
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
                   placeholder="Type your message..."
-                  className="flex-1 bg-transparent px-4 py-4 focus:outline-none text-lg min-w-0"
+                  disabled={isProcessing}
+                  className="flex-1 bg-transparent px-4 py-4 focus:outline-none text-lg min-w-0 disabled:opacity-50"
                 />
 
                 <button
                   onClick={handleTextSubmit}
-                  disabled={!inputText.trim()}
+                  disabled={!inputText.trim() || isProcessing}
                   className="p-3 bg-secondary hover:bg-violet-700 rounded-full text-white disabled:opacity-50 mr-1 shrink-0 transition-colors"
                   aria-label="Send Message"
                 >
