@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createLiveSession, LiveSession } from '../services/geminiLive';
 import { createMicrophoneStream, MicrophoneStream } from '../services/microphone';
-import { playAudioChunk, stopAudio, resetAudioTiming } from '../services/audio';
+import { playAudioChunk, stopAudio, resetAudioTiming, waitForAudioEnd } from '../services/audio';
 import { Message } from '../types';
 
 interface UseGeminiSessionProps {
@@ -71,7 +71,7 @@ export const useGeminiSession = ({ onMessageAdded }: UseGeminiSessionProps) => {
       onModelText: (text) => {
         modelTextRef.current += text;
       },
-      onTurnComplete: () => {
+      onTurnComplete: async () => {
         // Add model message
         if (modelTextRef.current.trim()) {
           onMessageAdded({
@@ -81,10 +81,14 @@ export const useGeminiSession = ({ onMessageAdded }: UseGeminiSessionProps) => {
           });
           modelTextRef.current = '';
         }
+        
+        // Wait for audio to finish playing before listening
+        await waitForAudioEnd();
+        
         setIsSpeaking(false);
 
-        // Auto-restart listening
-        setTimeout(() => startListening(), 500);
+        // Auto-restart listening with a small buffer
+        setTimeout(() => startListening(), 100);
       },
       onError: (error) => {
         console.error('Session error:', error);

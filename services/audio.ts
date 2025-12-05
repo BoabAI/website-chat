@@ -63,3 +63,10 @@ export const resetAudioTiming = () => {
   const ctx = getContext();
   nextStartTime = ctx.currentTime;
 };
+
+// Wait for the current audio queue to finish playing
+export const waitForAudioEnd = () => {
+  const ctx = getContext();
+  const remaining = Math.max(0, nextStartTime - ctx.currentTime);
+  return new Promise(resolve => setTimeout(resolve, remaining * 1000));
+};

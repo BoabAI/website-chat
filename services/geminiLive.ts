@@ -82,9 +82,6 @@ export const createLiveSession = async (
       realtimeInputConfig: {
         automaticActivityDetection: {
           disabled: false,
-          endOfSpeechSensitivity: "END_SENSITIVITY_HIGH",
-          startOfSpeechSensitivity: "START_SENSITIVITY_HIGH",
-          silenceDurationMs: 500,
         },
       },
     },
