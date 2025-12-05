@@ -115,9 +115,12 @@ export const generateSpeech = async (text: string): Promise<string | null> => {
   const ai = getAiClient();
 
   try {
+    // Wrap text with Australian English accent instruction
+    const promptText = `Speak with an Australian English accent, using natural Australian pronunciation and intonation: ${text}`;
+
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text }] }],
+      contents: [{ parts: [{ text: promptText }] }],
       config: {
         responseModalities: [Modality.AUDIO],
         speechConfig: {

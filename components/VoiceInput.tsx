@@ -16,7 +16,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onTranscript, isProcessing }) =
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.lang = 'en-AU'; // Australian English
 
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;

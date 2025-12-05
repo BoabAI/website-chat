@@ -80,16 +80,22 @@ const App = () => {
 
   const handleSpeakResponse = async (text: string) => {
     stopCurrentAudio(); // Stop any previous speech
-    setIsPlayingAudio(true);
+
     const audioBase64 = await generateSpeech(text);
     if (audioBase64) {
-      const source = await playAudioData(audioBase64, () => {
-        setIsPlayingAudio(false);
-        setCurrentAudioSource(null);
-      });
+      const source = await playAudioData(
+        audioBase64,
+        () => {
+          // onEnded: Audio finished playing
+          setIsPlayingAudio(false);
+          setCurrentAudioSource(null);
+        },
+        () => {
+          // onStarted: Audio actually started playing - NOW show the indicator
+          setIsPlayingAudio(true);
+        }
+      );
       setCurrentAudioSource(source);
-    } else {
-      setIsPlayingAudio(false);
     }
   };
 

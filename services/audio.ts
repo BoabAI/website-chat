@@ -22,8 +22,9 @@ export const decodeBase64Audio = (base64String: string): Uint8Array => {
 };
 
 export const playAudioData = async (
-  base64Audio: string, 
-  onEnded?: () => void
+  base64Audio: string,
+  onEnded?: () => void,
+  onStarted?: () => void
 ): Promise<AudioBufferSourceNode> => {
   const ctx = getAudioContext();
   
@@ -57,5 +58,9 @@ export const playAudioData = async (
   };
 
   source.start();
+
+  // Signal that audio playback has actually started
+  if (onStarted) onStarted();
+
   return source;
 };
