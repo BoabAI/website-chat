@@ -105,12 +105,41 @@ resource "aws_lambda_function_url" "proxy" {
   }
 }
 
-# Function URL with authorization_type NONE still needs an explicit public
-# invoke permission (missing it returns 403).
+# Function URL with authorization_type NONE needs TWO resource-policy grants
+# (AWS requirement since October 2025) — missing either returns 403:
+#   1. lambda:InvokeFunctionUrl — the Function URL invocation itself
+#   2. lambda:InvokeFunction, scoped to function-URL calls only — otherwise
+#      Lambda rejects the request even though InvokeFunctionUrl is granted.
 resource "aws_lambda_permission" "proxy_url" {
   statement_id           = "AllowPublicFunctionUrl"
   action                 = "lambda:InvokeFunctionUrl"
   function_name          = aws_lambda_function.proxy.function_name
   principal              = "*"
   function_url_auth_type = "NONE"
+}
+
+
+# The AWS provider (pinned ~> 5.0) doesn't yet expose an `invoked_via_function_url`
+# argument on aws_lambda_permission for this second grant, so it's added via the
+# raw API (matches AWS's own `--invoked-via-function-url` CLI flag). Idempotent:
+# skips if the statement already exists, so re-applies are safe.
+resource "null_resource" "proxy_url_invoke_function" {
+  triggers = {
+    function_name = aws_lambda_function.proxy.function_name
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws lambda get-policy --function-name ${aws_lambda_function.proxy.function_name} --region ${var.aws_region} 2>/dev/null | grep -q AllowPublicFunctionUrlInvokeFunction || \
+      aws lambda add-permission \
+        --function-name ${aws_lambda_function.proxy.function_name} \
+        --statement-id AllowPublicFunctionUrlInvokeFunction \
+        --action lambda:InvokeFunction \
+        --principal '*' \
+        --invoked-via-function-url \
+        --region ${var.aws_region}
+    EOT
+  }
+
+  depends_on = [aws_lambda_permission.proxy_url]
 }
