@@ -27,3 +27,13 @@ output "console_url" {
   description = "AWS Console URL for the Amplify app"
   value       = "https://${var.aws_region}.console.aws.amazon.com/amplify/home?region=${var.aws_region}#/${aws_amplify_app.website_chat.id}"
 }
+
+output "proxy_function_url" {
+  description = "Gemini proxy Function URL (also injected into the Amplify build as VITE_PROXY_URL)"
+  value       = aws_lambda_function_url.proxy.function_url
+}
+
+output "ratelimit_table_name" {
+  description = "DynamoDB table backing proxy rate limiting"
+  value       = aws_dynamodb_table.ratelimit.name
+}

@@ -1,0 +1,16 @@
+{
+  "name": "website-chat-gemini-proxy",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Server-side proxy that holds GEMINI_API_KEY and forwards chat/summary/speech to Gemini.",
+  "type": "module",
+  "main": "index.mjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@aws-sdk/lib-dynamodb": "^3.700.0",
+    "@google/genai": "^1.31.0"
+  }
+}

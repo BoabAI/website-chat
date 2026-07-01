@@ -25,9 +25,12 @@ resource "aws_amplify_app" "website_chat" {
           - node_modules/**/*
   EOT
 
-  # Environment variables injected at build time
+  # Environment variables injected at build time.
+  # The Gemini key is deliberately NOT here — it lives only in the proxy Lambda
+  # (see proxy.tf) so it never reaches the browser. Vite exposes VITE_-prefixed
+  # vars to client code, so the frontend reads the proxy URL from VITE_PROXY_URL.
   environment_variables = {
-    GEMINI_API_KEY = var.gemini_api_key
+    VITE_PROXY_URL = aws_lambda_function_url.proxy.function_url
   }
 
   # Branch settings

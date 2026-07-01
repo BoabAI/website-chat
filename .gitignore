@@ -35,6 +35,10 @@ terraform/override.tf.json
 terraform/*_override.tf
 terraform/*_override.tf.json
 
+# Lambda proxy build artifacts
+lambda/node_modules
+terraform/*.zip
+
 # Playwright MCP
 .playwright-mcp/
 coverage

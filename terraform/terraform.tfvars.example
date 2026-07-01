@@ -11,7 +11,14 @@ github_token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # Google Gemini API Key
 # Get at: https://aistudio.google.com/app/apikey
+# IMPORTANT: rotate the previously-exposed key first — it was baked into the
+# public client bundle. This key is used ONLY by the proxy Lambda now.
 gemini_api_key = "your-gemini-api-key"
 
 # Branch to deploy
 branch_name = "main"
+
+# CORS origins allowed to call the proxy Function URL (comma-separated).
+# Use "*" for initial testing; tighten to your Amplify domain for production,
+# e.g. "https://main.d1234abcd.amplifyapp.com".
+allowed_origins = "*"
